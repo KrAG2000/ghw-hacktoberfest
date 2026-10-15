@@ -162,7 +162,13 @@ input, select {
   background: var(--paper);
 }
 
-.card.done { opacity: 0.55; }
+.card.done,
+.card.past { opacity: 0.55; }
+
+.card.past .tag {
+  background: rgba(92, 86, 76, 0.16);
+  color: var(--muted);
+}
 
 .card h2 {
   margin: 0;

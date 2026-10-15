@@ -9,18 +9,52 @@ export function isValidDate(value) {
   return !Number.isNaN(date.getTime());
 }
 
-export function upcomingEvents(events, now) {
-  const cutoff = now instanceof Date ? now : new Date(now);
-  if (!isValidDate(cutoff)) return [];
-
+export function sortByStart(events) {
   return events
-    .filter((event) => isValidDate(event?.startsAt) && new Date(event.startsAt) >= cutoff)
+    .filter((event) => isValidDate(event?.startsAt))
     .slice()
     .sort((a, b) => {
       const delta = new Date(a.startsAt) - new Date(b.startsAt);
       if (delta !== 0) return delta;
-      return a.name.localeCompare(b.name);
+      return String(a.name ?? "").localeCompare(String(b.name ?? ""));
     });
+}
+
+export function upcomingEvents(events, now) {
+  const cutoff = now instanceof Date ? now : new Date(now);
+  if (!isValidDate(cutoff)) return [];
+
+  return sortByStart(events).filter((event) => new Date(event.startsAt) >= cutoff);
+}
+
+export function isPastEvent(event, now = new Date()) {
+  const cutoff = now instanceof Date ? now : new Date(now);
+  if (!isValidDate(cutoff) || !isValidDate(event?.startsAt)) return false;
+  return new Date(event.startsAt) < cutoff;
+}
+
+/** datetime-local values have no timezone; treat them as local wall time. */
+export function parseLocalDateTime(value) {
+  if (value instanceof Date) return isValidDate(value) ? value : null;
+  if (typeof value !== "string") return isValidDate(value) ? new Date(value) : null;
+
+  const match = value.trim().match(/^(\d{4})-(\d{2})-(\d{2})T(\d{2}):(\d{2})(?::(\d{2}))?$/);
+  if (match) {
+    const [, year, month, day, hour, minute, second = "0"] = match;
+    const date = new Date(
+      Number(year),
+      Number(month) - 1,
+      Number(day),
+      Number(hour),
+      Number(minute),
+      Number(second),
+      0,
+    );
+    return isValidDate(date) ? date : null;
+  }
+
+  const date = new Date(value);
+  return isValidDate(date) ? date : null;
 }
 
 export function filterByAudience(events, audience) {
@@ -31,16 +65,25 @@ export function filterByAudience(events, audience) {
 export function createEvent({ name, startsAt, location, audience }) {
   const trimmed = String(name ?? "").trim();
   if (!trimmed) throw new Error("Event name is required.");
-  if (!isValidDate(startsAt)) throw new Error("Start time is not a valid date.");
+  const start = parseLocalDateTime(startsAt);
+  if (!start) throw new Error("Start time is not a valid date.");
 
   return {
     id: crypto.randomUUID(),
     name: trimmed,
-    startsAt: new Date(startsAt).toISOString(),
+    startsAt: start.toISOString(),
     location: String(location ?? "").trim() || "Unknown",
     audience: audience || "public",
     done: false,
   };
+}
+
+export function defaultStartsAt(now = new Date()) {
+  const start = new Date(now);
+  start.setMinutes(0, 0, 0);
+  start.setHours(start.getHours() + 1);
+  const pad = (n) => String(n).padStart(2, "0");
+  return `${start.getFullYear()}-${pad(start.getMonth() + 1)}-${pad(start.getDate())}T${pad(start.getHours())}:${pad(start.getMinutes())}`;
 }
 
 export function sampleWeek(now = new Date()) {

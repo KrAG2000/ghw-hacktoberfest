@@ -1,9 +1,17 @@
-import { createEvent, filterByAudience, sampleWeek, upcomingEvents } from "./events.mjs";
+import {
+  createEvent,
+  defaultStartsAt,
+  filterByAudience,
+  isPastEvent,
+  sampleWeek,
+  sortByStart,
+} from "./events.mjs?v=2";
 
 const STORAGE_KEY = "campus-week-board";
 const THEME_KEY = "campus-week-theme";
 
 const form = document.querySelector("#event-form");
+const startsAtInput = form.querySelector('[name="startsAt"]');
 const list = document.querySelector("#event-list");
 const empty = document.querySelector("#empty");
 const error = document.querySelector("#form-error");
@@ -16,6 +24,7 @@ let events = load();
 let audience = "all";
 
 applyTheme(localStorage.getItem(THEME_KEY) || "light");
+resetFormDefaults();
 render();
 
 form.addEventListener("submit", (event) => {
@@ -32,6 +41,8 @@ form.addEventListener("submit", (event) => {
     );
     error.textContent = "";
     form.reset();
+    resetFormDefaults();
+    audience = "all";
     save();
     render();
   } catch (err) {
@@ -76,9 +87,14 @@ clearButton.addEventListener("click", () => {
 });
 
 function render() {
-  const visible = filterByAudience(upcomingEvents(events, new Date()), audience);
-  count.textContent = `${visible.length} upcoming`;
-  list.replaceChildren(...visible.map(card));
+  const now = new Date();
+  const visible = sortByStart(filterByAudience(events, audience));
+  const upcoming = visible.filter((event) => !isPastEvent(event, now)).length;
+  count.textContent =
+    visible.length === 0
+      ? "0 events"
+      : `${visible.length} event${visible.length === 1 ? "" : "s"} · ${upcoming} upcoming`;
+  list.replaceChildren(...visible.map((event) => card(event, now)));
   empty.hidden = visible.length !== 0;
 
   for (const chip of document.querySelectorAll(".chip")) {
@@ -86,9 +102,10 @@ function render() {
   }
 }
 
-function card(event) {
+function card(event, now) {
+  const past = isPastEvent(event, now);
   const article = document.createElement("article");
-  article.className = event.done ? "card done" : "card";
+  article.className = [event.done ? "done" : "", past ? "past" : "", "card"].filter(Boolean).join(" ");
   const when = new Intl.DateTimeFormat(undefined, {
     weekday: "short",
     month: "short",
@@ -101,12 +118,16 @@ function card(event) {
     <button class="icon" type="button" data-action="done" data-id="${event.id}" aria-label="Mark ${escapeHtml(event.name)} done">${event.done ? "✓" : "○"}</button>
     <div>
       <h2>${escapeHtml(event.name)}</h2>
-      <p class="meta">${escapeHtml(when)} · ${escapeHtml(event.location)}</p>
+      <p class="meta">${escapeHtml(when)} · ${escapeHtml(event.location)}${past ? " · past" : ""}</p>
       <span class="tag">${escapeHtml(event.audience)}</span>
     </div>
     <button class="ghost" type="button" data-action="delete" data-id="${event.id}">Remove</button>
   `;
   return article;
+}
+
+function resetFormDefaults() {
+  startsAtInput.value = defaultStartsAt();
 }
 
 function applyTheme(theme) {
