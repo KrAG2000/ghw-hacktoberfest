@@ -1,0 +1,71 @@
+<!DOCTYPE html>
+<html lang="en">
+  <head>
+    <meta charset="UTF-8" />
+    <meta name="viewport" content="width=device-width, initial-scale=1" />
+    <title>Campus Week Board</title>
+    <link rel="stylesheet" href="./styles.css" />
+  </head>
+  <body>
+    <main class="wrap">
+      <header>
+        <div>
+          <p class="kicker">Challenge 1 · Campus Launch Desk</p>
+          <h1>Campus Week Board</h1>
+          <p class="lede">
+            A small board for the week ahead. Add what is happening, filter who it is for, and keep the list on this browser.
+          </p>
+        </div>
+        <button id="theme" class="ghost" type="button">Dark mode</button>
+      </header>
+
+      <section class="panel">
+        <form id="event-form">
+          <label>
+            Event
+            <input name="name" required maxlength="80" placeholder="Library late hours" />
+          </label>
+          <label>
+            When
+            <input name="startsAt" type="datetime-local" required />
+          </label>
+          <label>
+            Where
+            <input name="location" maxlength="80" placeholder="Main library" />
+          </label>
+          <label>
+            Who
+            <select name="audience">
+              <option value="students">students</option>
+              <option value="club">club</option>
+              <option value="hackers">hackers</option>
+              <option value="public">public</option>
+            </select>
+          </label>
+          <button class="primary" type="submit">Add</button>
+        </form>
+        <p id="form-error" class="error" role="alert"></p>
+      </section>
+
+      <section class="panel">
+        <div class="toolbar">
+          <div class="chips" role="group" aria-label="Filter by audience">
+            <button class="chip" type="button" data-audience="all" aria-pressed="true">All</button>
+            <button class="chip" type="button" data-audience="students">Students</button>
+            <button class="chip" type="button" data-audience="club">Club</button>
+            <button class="chip" type="button" data-audience="hackers">Hackers</button>
+            <button class="chip" type="button" data-audience="public">Public</button>
+          </div>
+          <p id="count" class="count">0 upcoming</p>
+        </div>
+        <div id="event-list" class="list"></div>
+        <p id="empty" class="empty">Nothing upcoming yet. Add an event, or load a sample week to see the board filled in.</p>
+        <div class="toolbar">
+          <button id="sample" class="ghost" type="button">Load sample week</button>
+          <button id="clear" class="ghost" type="button">Clear board</button>
+        </div>
+      </section>
+    </main>
+    <script type="module" src="./app.mjs"></script>
+  </body>
+</html>
